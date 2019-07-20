@@ -1,0 +1,14 @@
+{
+  "name": "skill_eval",
+  "version": "1.0.0",
+  "description": "Use the github api to go through repos to check for licenses",
+  "main": "repo_check.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ian Hagen",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0"
+  }
+}
