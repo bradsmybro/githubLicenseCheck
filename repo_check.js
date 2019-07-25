@@ -1,54 +1,36 @@
 const axios = require("axios");
+const licenses = require("./licenses");
+const create_branch = require("./branch");
+const commits = require("./commit");
+const pulls = require("./pull");
 
-api_config = {
-  headers: {
-    //Will put the api auth token or keys here?
-    //Explicit request for v3 of the github api
-    Accept: "application / vnd.github.v3 + json"
-  }
-};
+axios.defaults.baseURL = "https://api.github.com";
+axios.defaults.headers.common["Authorization"] =
+  "Bearer 2124235bd4a6ee4e7b016346e0a9263358d5e59b";
 
 //Type of user that is being looked for
 const desired_type = "Organization";
 
-const base_url = "https://api.github.com/users/";
-
 function handle_error(error) {
   console.log("Error with API call");
-  console.log(error);
-}
-
-//will get info about license for public repos
-async function public_repos(name) {
-  let data = await axios.get(base_url + name + "/repos").catch(function(error) {
-    handle_error(error);
-  });
-
-  //returns a list of objects with public repo information
-  return data.data;
-}
-
-async function check_license(name) {
-  let repos = await public_repos(name);
-
-  for (repo in repos) {
-    console.log(repos[repo].license);
-    let license = repos[repo].license;
-    if (license === null) {
-      //call the request here to get a license
-      console.log("No license found for " + repos[repo].name);
-    } else {
-      console.log(license.name);
-    }
-  }
+  console.log(error.response.config.url);
+  console.log(error.response.status + " " + error.response.statusText);
+  console.log(error.response.data.message);
 }
 
 async function is_desired(name) {
-  let data = await axios
-    .get("https://api.github.com/users/" + name)
-    .catch(function(error) {
+  let data = {};
+  try {
+    data = await axios.get("/orgs/" + name).catch(function(error) {
       handle_error(error);
+      return false;
     });
+  } catch (error) {
+    return false;
+  }
+  if (data === false) {
+    return false;
+  }
 
   data = data.data;
 
@@ -60,8 +42,46 @@ async function is_desired(name) {
   }
 }
 
-let name = "bradsmybro-test";
-
-if (is_desired(name)) {
-  check_license(name);
+async function repo_check(name, branch) {
+  let no_license = [];
+  if (await is_desired(name)) {
+    no_license = await licenses.check_license(name);
+    if (no_license.length > 0) {
+      for (let repo in no_license) {
+        console.log("No license found for " + no_license[repo].name);
+        let creation = await create_branch.create_branch(
+          no_license[repo],
+          branch
+        );
+        if (creation != false) {
+          let commit = await commits.push_commit(no_license[repo], branch);
+          if (commit != false) {
+            let pull = await pulls.pull_request(no_license[repo], branch);
+            if (pull != false) {
+              console.log("MIT license pull request added");
+            }
+          }
+        }
+      }
+    }
+  }
 }
+
+const args = process.argv.slice(2);
+
+//Takes three values organization name, new branch name, and Personal access tokens
+
+if (args.length > 3) {
+  console.log(
+    "Only three arguements can be accepts. Please follow this format node.js repo_check.js organization branch token"
+  );
+  process.exit(1);
+}
+let name = args[0];
+let new_branch = args[1];
+let token = args[2];
+axios.defaults.baseURL = "https://api.github.com";
+axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+exports.token = token;
+//Values to take in from command line, auth token, org name, new branch name
+repo_check(name, new_branch);
