@@ -5,6 +5,7 @@ const token = require("./repo_check");
 axios.defaults.baseURL = "https://api.github.com";
 axios.defaults.headers.common["Authorization"] = "Bearer " + token.token;
 
+//Sends in the pull request
 exports.pull_request = async function pull_request(repo_data, branch) {
   let branch_new = branch;
   try {

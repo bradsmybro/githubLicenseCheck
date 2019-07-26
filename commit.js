@@ -5,6 +5,9 @@ const token = require("./repo_check");
 axios.defaults.baseURL = "https://api.github.com";
 axios.defaults.headers.common["Authorization"] = "Bearer " + token.token;
 
+const lic = "mit";
+
+//Takes the license and encodes it for the commit
 async function gen_license(desired_lic, name) {
   let date = new Date();
   let year = String(date.getFullYear());
@@ -17,10 +20,11 @@ async function gen_license(desired_lic, name) {
   return Buffer.from(body).toString("base64");
 }
 
+//Pushes the commit to the newly created branch
 exports.push_commit = async function push_commit(repo_data, branch) {
   let body = {
     message: "Adding a license",
-    content: await gen_license("mit", repo_data.owner),
+    content: await gen_license(lic, repo_data.owner),
     branch: branch
   };
   try {

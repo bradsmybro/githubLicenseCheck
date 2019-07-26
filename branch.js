@@ -5,7 +5,7 @@ const token = require("./repo_check");
 axios.defaults.baseURL = "https://api.github.com";
 axios.defaults.headers.common["Authorization"] = "Bearer " + token.token;
 
-//create a new branch to commit the license to
+//Gets required info for branch creation (sha)
 exports.create_branch = async function create_branch(repo_data, branch) {
   try {
     //Gets the sha for the current head branch
@@ -34,6 +34,7 @@ exports.create_branch = async function create_branch(repo_data, branch) {
   }
 };
 
+//Creates the new branch
 async function build_branch(repo_data, branch, response) {
   let body = {
     ref: "refs/heads/" + branch,
@@ -43,11 +44,13 @@ async function build_branch(repo_data, branch, response) {
     let branch_response = await axios
       .post("repos/" + repo_data.full_name + "/git/refs", body)
       .catch(function(error) {
-        //If the branch already exists try again with 1 added to the end
         if (error.response.data.message == "Reference already exists") {
+          //Have some issues here, it can run through hundreds of repos and then hit this error
           console.log(
-            "Branch name already in use please select a new branch name and run again"
+            "Branch name already in use. Branch creation failed for " +
+              repo_data.full_name
           );
+          return false;
         } else {
           handle_error(error);
           return false;

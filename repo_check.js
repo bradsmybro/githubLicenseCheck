@@ -4,10 +4,6 @@ const create_branch = require("./branch");
 const commits = require("./commit");
 const pulls = require("./pull");
 
-axios.defaults.baseURL = "https://api.github.com";
-axios.defaults.headers.common["Authorization"] =
-  "Bearer 2124235bd4a6ee4e7b016346e0a9263358d5e59b";
-
 //Type of user that is being looked for
 const desired_type = "Organization";
 
@@ -18,6 +14,7 @@ function handle_error(error) {
   console.log(error.response.data.message);
 }
 
+//Checks if the entered name is an org logs a message and exits if not
 async function is_desired(name) {
   let data = {};
   try {
@@ -42,11 +39,12 @@ async function is_desired(name) {
   }
 }
 
+//Central function
 async function repo_check(name, branch) {
   let no_license = [];
   if (await is_desired(name)) {
     no_license = await licenses.check_license(name);
-    if (no_license.length > 0) {
+    if (no_license.length > 0 && no_license != false) {
       for (let repo in no_license) {
         console.log("No license found for " + no_license[repo].name);
         let creation = await create_branch.create_branch(
@@ -63,6 +61,7 @@ async function repo_check(name, branch) {
           }
         }
       }
+      console.log("Pull requests complete");
     }
   }
 }
@@ -71,17 +70,18 @@ const args = process.argv.slice(2);
 
 //Takes three values organization name, new branch name, and Personal access tokens
 
-if (args.length > 3) {
+if (args.length != 3) {
   console.log(
-    "Only three arguements can be accepts. Please follow this format node.js repo_check.js organization branch token"
+    "Only three arguements can be accepted. Please follow this format node.js repo_check.js organization branch token"
   );
   process.exit(1);
 }
 let name = args[0];
 let new_branch = args[1];
 let token = args[2];
+
 axios.defaults.baseURL = "https://api.github.com";
 axios.defaults.headers.common["Authorization"] = "Bearer " + token;
 exports.token = token;
-//Values to take in from command line, auth token, org name, new branch name
+
 repo_check(name, new_branch);
